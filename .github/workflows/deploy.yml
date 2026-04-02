@@ -1,0 +1,114 @@
+name: Deploy to HashiCorp Cluster
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+env:
+  NOMAD_ADDR:        ${{ secrets.NOMAD_ADDR }}
+  NOMAD_TOKEN:       ${{ secrets.NOMAD_TOKEN }}
+  STUDENT_NAMESPACE: ${{ secrets.STUDENT_NAMESPACE }}
+
+jobs:
+  # ============================================================
+  # SECRETS (opcional): escrever segredos no Vault antes do deploy
+  # Ative definindo a Variable SYNC_VAULT_SECRETS=true
+  # ============================================================
+  vault-secrets:
+    name: Sync Vault Secrets
+    runs-on: ubuntu-latest
+    if: vars.SYNC_VAULT_SECRETS == 'true'
+    steps:
+      - name: Instalar Vault CLI
+        run: |
+          VAULT_VERSION="1.21.4"
+          curl -fsSL "https://releases.hashicorp.com/vault/${VAULT_VERSION}/vault_${VAULT_VERSION}_linux_amd64.zip" -o vault.zip
+          unzip -o vault.zip && sudo mv vault /usr/local/bin/
+
+      - name: Escrever segredos no Vault
+        env:
+          VAULT_ADDR:        ${{ secrets.VAULT_ADDR }}
+          VAULT_TOKEN:       ${{ secrets.VAULT_TOKEN }}
+          VAULT_SKIP_VERIFY: "true"
+        run: |
+          vault kv put "secret/students/${STUDENT_NAMESPACE}/app" \
+            db_password="${{ secrets.APP_DB_PASSWORD }}" \
+            api_key="${{ secrets.APP_API_KEY }}"
+
+  # ============================================================
+  # BUILD: construir e publicar imagem Docker no ghcr.io
+  # ============================================================
+  build:
+    name: Build & Push Docker Image
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    outputs:
+      image: ghcr.io/${{ github.repository }}:${{ github.sha }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Login no GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build e Push da imagem
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          tags: |
+            ghcr.io/${{ github.repository }}:${{ github.sha }}
+            ghcr.io/${{ github.repository }}:latest
+
+  # ============================================================
+  # DEPLOY: submeter job ao Nomad
+  # vault-secrets é pré-requisito opcional: se skipped, deploy continua
+  # ============================================================
+  deploy:
+    name: Deploy to Nomad
+    runs-on: ubuntu-latest
+    needs: [vault-secrets, build]
+    if: always() && !contains(needs.*.result, 'failure') && !contains(needs.*.result, 'cancelled')
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Instalar Nomad CLI
+        run: |
+          NOMAD_VERSION="1.11.3"
+          curl -fsSL "https://releases.hashicorp.com/nomad/${NOMAD_VERSION}/nomad_${NOMAD_VERSION}_linux_amd64.zip" -o nomad.zip
+          unzip -o nomad.zip && sudo mv nomad /usr/local/bin/
+
+      - name: Configurar certificado TLS
+        run: |
+          echo "${{ secrets.NOMAD_CACERT_B64 }}" | base64 -d > /tmp/ca.pem
+          echo "NOMAD_CACERT=/tmp/ca.pem"  >> "$GITHUB_ENV"
+          echo "NOMAD_SKIP_VERIFY=true"    >> "$GITHUB_ENV"
+          echo "VAULT_SKIP_VERIFY=true"    >> "$GITHUB_ENV"
+
+      - name: Validar job spec
+        run: |
+          nomad job validate \
+            -var="namespace=${STUDENT_NAMESPACE}" \
+            -var="image=ghcr.io/${{ github.repository }}:${{ github.sha }}" \
+            job.nomad.hcl
+
+      - name: Deploy para o cluster
+        run: |
+          nomad job run -detach \
+            -var="namespace=${STUDENT_NAMESPACE}" \
+            -var="image=ghcr.io/${{ github.repository }}:${{ github.sha }}" \
+            job.nomad.hcl
+
+      - name: Verificar status do deploy
+        run: |
+          sleep 15
+          JOB=$(grep '^job "' job.nomad.hcl | head -1 | awk -F'"' '{print $2}')
+          nomad job status -namespace="${STUDENT_NAMESPACE}" "${JOB}" || true
+          echo ""
+          echo "Acesse: http://${STUDENT_NAMESPACE}.projetos.sapucaia.ifsul.edu.br"

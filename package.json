@@ -1,0 +1,9 @@
+{
+  "name": "minha-aplicacao",
+  "version": "1.0.0",
+  "description": "Aplicacao exemplo para deploy no cluster HashiCorp",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  }
+}
