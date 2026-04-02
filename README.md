@@ -62,7 +62,7 @@ pelo GitHub Actions — você não precisa de acesso direto ao Vault.
 
 | Secret | Exemplo |
 |--------|---------|
-| `VAULT_ADDR` | `https://192.168.3.2:8200` (fornecido pelo professor) |
+| `VAULT_ADDR` | Endereço do Vault (fornecido pelo professor) |
 | `VAULT_TOKEN` | Token do Vault (fornecido pelo professor) |
 | `APP_DB_PASSWORD` | Sua senha do banco |
 | `APP_API_KEY` | Sua chave de API |

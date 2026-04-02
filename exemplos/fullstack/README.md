@@ -41,7 +41,15 @@ adicione os secrets da aplicação:
 | `VAULT_TOKEN` | Token do Vault (fornecido pelo professor) |
 | `APP_DB_PASSWORD` | Senha do usuário da aplicação no MySQL |
 | `APP_DB_ROOT_PASSWORD` | Senha root do MySQL |
-| `APP_JWT_SECRET` | Chave secreta para geração de tokens JWT |
+| `APP_JWT_SECRET` | Chave secreta para geração de tokens JWT (veja abaixo como gerar) |
+
+> **Como gerar o `APP_JWT_SECRET`:** execute um dos comandos abaixo no seu terminal e cole o resultado no secret:
+> ```bash
+> openssl rand -hex 32
+> # ou
+> python3 -c "import secrets; print(secrets.token_hex(32))"
+> ```
+> O resultado é uma string aleatória de 64 caracteres. Guarde-a — você precisará do mesmo valor se recriar os secrets.
 
 ### 3. Configure a Variable
 
