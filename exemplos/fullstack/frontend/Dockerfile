@@ -12,6 +12,6 @@ RUN npx ng build --configuration=production
 
 # Stage 2: Serve com Nginx
 FROM nginx:alpine
-COPY --from=build /app/dist/task-frontend/browser /usr/share/nginx/html
+COPY --from=build /app/dist/task-frontend /usr/share/nginx/html
 EXPOSE 80
 CMD ["nginx", "-g", "daemon off;"]
