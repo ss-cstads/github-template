@@ -1,9 +1,8 @@
 # Arquivos que NAO devem entrar no build context do Docker
-node_modules
-dist
-.angular
+target
 .git
 .gitignore
 *.md
+.idea
 .vscode
 .env
