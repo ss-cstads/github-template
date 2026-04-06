@@ -26,5 +26,9 @@
     "@angular/cli": "^19.2.0",
     "@angular/compiler-cli": "^19.2.0",
     "typescript": "~5.7.0"
+  },
+  "overrides": {
+    "glob": "^11.0.0",
+    "tar": "^7.0.0"
   }
 }
