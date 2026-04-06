@@ -114,10 +114,10 @@ EOH
           "--collation-server=utf8mb4_unicode_ci",
         ]
 
-        # Dados persistidos no ephemeral_disk
+        # Dados persistidos no ephemeral_disk (alloc/data/ e compartilhado pelo grupo)
         mount {
           type     = "bind"
-          source   = "alloc"
+          source   = "alloc/data"
           target   = "/var/lib/mysql"
           readonly = false
         }
