@@ -43,10 +43,13 @@ job "mysql" {
       }
 
       check {
-        name     = "MySQL TCP Check"
-        type     = "tcp"
-        interval = "10s"
-        timeout  = "3s"
+        name     = "MySQL Health"
+        type     = "script"
+        task     = "mysql"
+        command  = "mysqladmin"
+        args     = ["ping", "-h", "127.0.0.1", "--silent"]
+        interval = "15s"
+        timeout  = "5s"
       }
     }
 
