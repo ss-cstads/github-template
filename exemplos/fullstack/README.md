@@ -61,22 +61,22 @@ A estrutura final do seu repositorio deve ficar assim:
 Va em **Settings → Secrets and variables → Actions → "New repository secret"**
 e adicione os seguintes secrets (todos fornecidos pelo professor):
 
-| Secret | Descricao |
-|--------|-----------|
-| `NOMAD_ADDR` | Endereco do cluster Nomad |
-| `NOMAD_TOKEN` | Seu token de acesso ao Nomad |
-| `NOMAD_CACERT_B64` | Certificado TLS do cluster (base64) |
+|       Secret        |            Descricao                  |
+|---------------------|---------------------------------------|
+| `NOMAD_ADDR`        | Endereco do cluster Nomad             |
+| `NOMAD_TOKEN`       | Seu token de acesso ao Nomad          |
+| `NOMAD_CACERT_B64`  | Certificado TLS do cluster (base64)   |
 | `STUDENT_NAMESPACE` | Seu namespace isolado (ex: `aluno01`) |
-| `VAULT_ADDR` | Endereco do Vault |
-| `VAULT_TOKEN` | Token do Vault |
+| `VAULT_ADDR`        | Endereco do Vault                     |
+| `VAULT_TOKEN`       | Token do Vault                        |
 
 Adicione tambem os **secrets da aplicacao** (valores definidos por voce):
 
-| Secret | Descricao |
-|--------|-----------|
-| `APP_DB_PASSWORD` | Senha do usuario da aplicacao no MySQL |
-| `APP_DB_ROOT_PASSWORD` | Senha root do MySQL |
-| `APP_JWT_SECRET` | Chave secreta para tokens JWT (veja abaixo) |
+|         Secret         |              Descricao                      |
+|------------------------|---------------------------------------------|
+| `APP_DB_PASSWORD`      | Senha do usuario da aplicacao no MySQL      |
+| `APP_DB_ROOT_PASSWORD` | Senha root do MySQL                         |
+| `APP_JWT_SECRET`       | Chave secreta para tokens JWT (veja abaixo) |
 
 > **Como gerar o `APP_JWT_SECRET`:**
 > ```bash
@@ -88,8 +88,8 @@ Adicione tambem os **secrets da aplicacao** (valores definidos por voce):
 
 Va em **Settings → Secrets and variables → Actions**, aba **"Variables" → "New repository variable"**:
 
-| Variable | Valor |
-|----------|-------|
+|      Variable        |  Valor |
+|----------------------|--------|
 | `SYNC_VAULT_SECRETS` | `true` |
 
 > Apos o primeiro deploy bem-sucedido, voce pode mudar para `false` para nao
@@ -147,11 +147,11 @@ Os servicos se comunicam via **Consul Connect** (service mesh):
 Os segredos sao injetados automaticamente nos containers via Vault Workload Identity.
 Voce **nao precisa acessar o Vault diretamente** — o GitHub Actions faz isso por voce.
 
-| Segredo | Usado por |
-|---------|-----------|
-| `db_password` | Backend (conexao) e MySQL (senha do usuario `taskapi`) |
-| `db_root_password` | MySQL (senha root) |
-| `jwt_secret` | Backend (assinatura de tokens JWT) |
+|      Segredo       |                     Usado por                          |
+|--------------------|--------------------------------------------------------|
+| `db_password`      | Backend (conexao) e MySQL (senha do usuario `taskapi`) |
+| `db_root_password` | MySQL (senha root)                                     |
+| `jwt_secret`       | Backend (assinatura de tokens JWT)                     |
 
 ### Boas praticas nos Dockerfiles
 
