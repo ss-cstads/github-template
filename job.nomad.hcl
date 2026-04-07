@@ -117,19 +117,17 @@ job "my-app" {
       }
 
       # --- Template: Injetar segredos do Vault como variaveis de ambiente ---
-      # Descomente o bloco abaixo se a sua aplicacao usa segredos do Vault
-      #
-      # template {
-      #   data = <<EOH
-      # {{ with secret "secret/data/students/${var.namespace}/app" }}
-      # DB_PASSWORD={{ .Data.data.db_password }}
-      # API_KEY={{ .Data.data.api_key }}
-      # {{ end }}
-      # EOH
-      #   destination = "secrets/app.env"
-      #   env         = true
-      #   change_mode = "restart"
-      # }
+      template {
+        data = <<EOH
+        {{ with secret "secret/data/students/${var.namespace}/app" }}
+        DB_PASSWORD={{ .Data.data.db_password }}
+        API_KEY={{ .Data.data.api_key }}
+        {{ end }}
+        EOH
+        destination = "secrets/app.env"
+        env         = true
+        change_mode = "restart"
+      }
 
       # --- Imagem Docker ---
       config {
