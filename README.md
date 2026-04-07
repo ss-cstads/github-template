@@ -68,9 +68,9 @@ cp templates/job.nomad.hcl job.nomad.hcl
 
 | Tipo de aplicacao | cpu | memory |
 |-------------------|-----|--------|
-| Node.js simples | 200 | 128 |
-| Python/Flask | 200 | 256 |
-| Spring Boot | 500 | 512 |
+| Node.js simples   | 200 | 128    |
+| Python/Flask      | 200 | 256    |
+| Spring Boot       | 500 | 512    |
 
 #### Health check
 
@@ -121,12 +121,12 @@ cluster. Os segredos sao escritos automaticamente pelo GitHub Actions.
 
 1. Adicione **GitHub Secrets** adicionais:
 
-| Secret | Descricao |
-|--------|-----------|
-| `VAULT_ADDR` | Endereco do Vault (fornecido pelo professor) |
-| `VAULT_TOKEN` | Token do Vault (fornecido pelo professor) |
-| `APP_DB_PASSWORD` | Exemplo: senha do banco de dados |
-| `APP_API_KEY` | Exemplo: chave de API |
+|       Secret      |                  Descricao                   |
+|-------------------|----------------------------------------------|
+| `VAULT_ADDR`      | Endereco do Vault (fornecido pelo professor) |
+| `VAULT_TOKEN`     | Token do Vault (fornecido pelo professor)    |
+| `APP_DB_PASSWORD` | Exemplo: senha do banco de dados             |
+| `APP_API_KEY`     | Exemplo: chave de API                        |
 
 2. Crie a **Variable** `SYNC_VAULT_SECRETS` com valor `true`:
    - **Settings → Secrets and variables → Actions**, aba **Variables**
