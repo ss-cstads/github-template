@@ -1,0 +1,152 @@
+name: Deploy Fullstack
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+env:
+  NOMAD_ADDR:        ${{ secrets.NOMAD_ADDR }}
+  NOMAD_TOKEN:       ${{ secrets.NOMAD_TOKEN }}
+  STUDENT_NAMESPACE: ${{ secrets.STUDENT_NAMESPACE }}
+
+jobs:
+  # ──────────────────────────────────────────────────────────
+  # Opcional: escrever segredos no Vault antes do deploy
+  # Ative definindo a Variable SYNC_VAULT_SECRETS=true
+  # ──────────────────────────────────────────────────────────
+  vault-secrets:
+    name: Sync Vault Secrets
+    runs-on: ubuntu-latest
+    if: vars.SYNC_VAULT_SECRETS == 'true'
+    steps:
+      - name: Instalar Vault CLI
+        run: |
+          curl -fsSL "https://releases.hashicorp.com/vault/1.21.4/vault_1.21.4_linux_amd64.zip" -o vault.zip
+          unzip -o vault.zip && sudo mv vault /usr/local/bin/
+
+      - name: Escrever segredos no Vault
+        env:
+          VAULT_ADDR:        ${{ secrets.VAULT_ADDR }}
+          VAULT_TOKEN:       ${{ secrets.VAULT_TOKEN }}
+          VAULT_SKIP_VERIFY: "true"
+        run: |
+          vault kv put "secret/students/${{ secrets.STUDENT_NAMESPACE }}/app" \
+            db_password="${{ secrets.APP_DB_PASSWORD }}"           \
+            db_root_password="${{ secrets.APP_DB_ROOT_PASSWORD }}" \
+            jwt_secret="${{ secrets.APP_JWT_SECRET }}"
+
+  # ──────────────────────────────────────────────────────────
+  # Build: imagem do Backend
+  # ──────────────────────────────────────────────────────────
+  build-backend:
+    name: Build Backend
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: docker/build-push-action@v5
+        with:
+          context: ./backend
+          push: true
+          tags: |
+            ghcr.io/${{ github.repository }}/backend:${{ github.sha }}
+            ghcr.io/${{ github.repository }}/backend:latest
+
+  # ──────────────────────────────────────────────────────────
+  # Build: imagem do Frontend
+  # ──────────────────────────────────────────────────────────
+  build-frontend:
+    name: Build Frontend
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: docker/build-push-action@v5
+        with:
+          context: ./frontend
+          push: true
+          tags: |
+            ghcr.io/${{ github.repository }}/frontend:${{ github.sha }}
+            ghcr.io/${{ github.repository }}/frontend:latest
+
+  # ──────────────────────────────────────────────────────────
+  # Deploy: MySQL → Backend → Frontend
+  # vault-secrets é pré-requisito opcional:
+  #   se SYNC_VAULT_SECRETS != true, é skipped e o deploy continua
+  # ──────────────────────────────────────────────────────────
+  deploy:
+    name: Deploy to Nomad
+    runs-on: ubuntu-latest
+    needs: [vault-secrets, build-backend, build-frontend]
+    if: always() && !contains(needs.*.result, 'failure') && !contains(needs.*.result, 'cancelled')
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Instalar Nomad CLI
+        run: |
+          curl -fsSL "https://releases.hashicorp.com/nomad/1.11.3/nomad_1.11.3_linux_amd64.zip" -o nomad.zip
+          unzip -o nomad.zip && sudo mv nomad /usr/local/bin/
+
+      - name: Configurar TLS do cluster
+        run: |
+          echo "${{ secrets.NOMAD_CACERT_B64 }}" | base64 -d > /tmp/ca.pem
+          echo "NOMAD_CACERT=/tmp/ca.pem"  >> "$GITHUB_ENV"
+          echo "NOMAD_SKIP_VERIFY=true"    >> "$GITHUB_ENV"
+          echo "VAULT_SKIP_VERIFY=true"    >> "$GITHUB_ENV"
+
+      - name: Deploy MySQL
+        run: |
+          nomad job run -detach \
+            -var="namespace=${STUDENT_NAMESPACE}" \
+            mysql.nomad.hcl
+
+      - name: Aguardar MySQL healthy
+        run: |
+          for i in $(seq 1 30); do
+            COUNT=$(nomad job status -namespace="${STUDENT_NAMESPACE}" mysql 2>/dev/null | grep -c "running" || echo 0)
+            [ "$COUNT" -gt 0 ] && echo "MySQL running" && break
+            echo "Aguardando MySQL... ($i/30)" && sleep 10
+          done
+
+      - name: Deploy Backend
+        run: |
+          nomad job run -detach \
+            -var="namespace=${STUDENT_NAMESPACE}" \
+            -var="image=ghcr.io/${{ github.repository }}/backend:${{ github.sha }}" \
+            backend.nomad.hcl
+
+      - name: Deploy Frontend
+        run: |
+          nomad job run -detach \
+            -var="namespace=${STUDENT_NAMESPACE}" \
+            -var="image=ghcr.io/${{ github.repository }}/frontend:${{ github.sha }}" \
+            frontend.nomad.hcl
+
+      - name: Status final
+        run: |
+          sleep 20
+          for job in mysql backend frontend; do
+            echo "── $job ──"
+            nomad job status -namespace="${STUDENT_NAMESPACE}" "$job" || true
+          done
+          echo ""
+          echo "Acesse: http://${STUDENT_NAMESPACE}.projetos.sapucaia.ifsul.edu.br"

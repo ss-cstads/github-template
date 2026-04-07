@@ -1,0 +1,25 @@
+{
+  "name": "task-api-typescript",
+  "version": "1.0.0",
+  "description": "API REST de tarefas com Express + TypeScript + Prisma",
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/server.js",
+    "prisma:generate": "prisma generate"
+  },
+  "dependencies": {
+    "@prisma/client": "^6.5.0",
+    "express": "^4.21.0",
+    "jsonwebtoken": "^9.0.2",
+    "bcryptjs": "^2.4.3",
+    "cors": "^2.8.5"
+  },
+  "devDependencies": {
+    "typescript": "~5.7.0",
+    "@types/express": "^5.0.0",
+    "@types/jsonwebtoken": "^9.0.7",
+    "@types/bcryptjs": "^2.4.6",
+    "@types/cors": "^2.8.17",
+    "prisma": "^6.5.0"
+  }
+}

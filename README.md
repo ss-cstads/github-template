@@ -323,20 +323,28 @@ CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8080"]
 │   ├── dockerignore.python        # .dockerignore para Python
 │   └── job.nomad.hcl              # Template de deploy no Nomad (generico)
 └── exemplos/
-    └── fullstack/                 # Exemplo completo: API + Frontend + MySQL
+    ├── fullstack/                 # Spring Boot + Angular + MySQL
+    ├── fullstack-express/         # Express.js + Angular + MySQL
+    ├── fullstack-ts/              # Express + TypeScript + Prisma + Angular + MySQL
+    └── fullstack-fastapi/         # FastAPI + Angular + MySQL
 ```
 
 ---
 
-## Exemplo fullstack (Backend + Frontend + Banco de dados)
+## Exemplos fullstack (Backend + Frontend + Banco de dados)
 
-Se quiser implantar uma aplicacao com multiplos servicos (ex: API + frontend + MySQL),
-veja a pasta `exemplos/fullstack/`. Ela contem:
+Aplicacoes completas com 3 servicos (API + Frontend + MySQL). A mesma aplicacao
+**Task Manager** implementada em 4 stacks diferentes:
 
-- Codigo-fonte do backend (Spring Boot) e frontend (Angular)
-- Jobs Nomad para 3 servicos com Consul Connect (service mesh)
-- Workflow adaptado para multi-servico
-- README com instrucoes detalhadas
+| Exemplo | Backend | Frontend | ORM |
+|---------|---------|----------|-----|
+| `exemplos/fullstack/` | Spring Boot (Java) | Angular | JPA/Hibernate |
+| `exemplos/fullstack-express/` | Express.js (JavaScript) | Angular | Sequelize |
+| `exemplos/fullstack-ts/` | Express + TypeScript | Angular | Prisma |
+| `exemplos/fullstack-fastapi/` | FastAPI (Python) | Angular | SQLAlchemy |
+
+Todos usam o mesmo frontend Angular e o mesmo MySQL.
+Escolha o que corresponde a sua stack e siga as instrucoes em `exemplos/fullstack/README.md`.
 
 Para usar, siga as instrucoes em `exemplos/fullstack/README.md`.
 
