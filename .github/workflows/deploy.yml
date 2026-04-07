@@ -32,6 +32,9 @@ jobs:
           VAULT_TOKEN:       ${{ secrets.VAULT_TOKEN }}
           VAULT_SKIP_VERIFY: "true"
         run: |
+          # PERSONALIZE: ajuste os segredos conforme sua aplicacao.
+          # Cada segredo aqui deve ter um GitHub Secret correspondente.
+          # Os nomes apos o "=" devem bater com o template no job.nomad.hcl.
           vault kv put "secret/students/${STUDENT_NAMESPACE}/app" \
             db_password="${{ secrets.APP_DB_PASSWORD }}" \
             api_key="${{ secrets.APP_API_KEY }}"
@@ -68,7 +71,8 @@ jobs:
 
   # ============================================================
   # DEPLOY: submeter job ao Nomad
-  # vault-secrets é pré-requisito opcional: se skipped, deploy continua
+  # vault-secrets e pre-requisito opcional:
+  #   se SYNC_VAULT_SECRETS != true, e skipped e o deploy continua
   # ============================================================
   deploy:
     name: Deploy to Nomad
@@ -89,7 +93,6 @@ jobs:
           echo "${{ secrets.NOMAD_CACERT_B64 }}" | base64 -d > /tmp/ca.pem
           echo "NOMAD_CACERT=/tmp/ca.pem"  >> "$GITHUB_ENV"
           echo "NOMAD_SKIP_VERIFY=true"    >> "$GITHUB_ENV"
-          echo "VAULT_SKIP_VERIFY=true"    >> "$GITHUB_ENV"
 
       - name: Validar job spec
         run: |
@@ -111,4 +114,4 @@ jobs:
           JOB=$(grep '^job "' job.nomad.hcl | head -1 | awk -F'"' '{print $2}')
           nomad job status -namespace="${STUDENT_NAMESPACE}" "${JOB}" || true
           echo ""
-          echo "Acesse: http://${STUDENT_NAMESPACE}.projetos.sapucaia.ifsul.edu.br"
+          echo "Acesse: https://${STUDENT_NAMESPACE}.projetos.sapucaia.ifsul.edu.br"

@@ -1,0 +1,32 @@
+# ==============================================================================
+# Dockerfile — Node.js (Express, Fastify, etc.)
+#
+# Boas praticas aplicadas:
+#   - Multi-stage build: separa dependencias de dev do runtime
+#   - Usuario nao-root: aplicacao roda como "node" (sem privilegios)
+#   - .dockerignore: impede node_modules e .git de entrar no build
+#   - Apenas dependencias de producao na imagem final
+#   - Imagem Alpine: superficie de ataque minima (~50MB)
+# ==============================================================================
+
+# --- Stage 1: Instalar dependencias ---
+FROM node:22-alpine AS deps
+WORKDIR /app
+COPY package*.json ./
+RUN npm ci --omit=dev
+
+# --- Stage 2: Runtime ---
+FROM node:22-alpine
+WORKDIR /app
+
+# Copiar apenas dependencias de producao
+COPY --from=deps /app/node_modules ./node_modules
+COPY . .
+
+# Rodar como usuario sem privilegios (usuario "node" ja existe na imagem)
+USER node
+
+# Porta onde a aplicacao escuta (deve bater com job.nomad.hcl)
+EXPOSE 8080
+
+CMD ["node", "server.js"]
