@@ -50,8 +50,8 @@ Va em **Settings → Secrets and variables → Actions → "New repository secre
 
 Va em **Settings → Secrets and variables → Actions**, aba **Variables**:
 
-| Variable | Valor |
-|----------|-------|
+| Variable             | Valor  |
+|----------------------|--------|
 | `SYNC_VAULT_SECRETS` | `true` |
 
 ### 4. Torne as imagens publicas
@@ -79,10 +79,10 @@ https://<seu-namespace>.projetos.sapucaia.ifsul.edu.br
 
 ## Problemas comuns
 
-| Problema | O que fazer |
-|----------|-------------|
-| "token denied" | Verifique se `NOMAD_TOKEN` esta correto |
-| Imagem nao encontrada | Torne os pacotes **publicos** (passo 4) |
-| Backend nao conecta ao MySQL | Aguarde — o MySQL demora ~30s para inicializar |
-| Pagina em branco | Abra o console do navegador (F12) |
-| Segredos nao injetados | Confirme que `SYNC_VAULT_SECRETS` esta como `true` |
+| Problema                     | O que fazer                                        |
+|------------------------------|----------------------------------------------------|
+| "token denied"               | Verifique se `NOMAD_TOKEN` esta correto            |
+| Imagem nao encontrada        | Torne os pacotes **publicos** (passo 4)            |
+| Backend nao conecta ao MySQL | Aguarde — o MySQL demora ~30s para inicializar     |
+| Pagina em branco             | Abra o console do navegador (F12)                  |
+| Segredos nao injetados       | Confirme que `SYNC_VAULT_SECRETS` esta como `true` |
