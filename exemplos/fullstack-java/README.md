@@ -35,20 +35,19 @@ cp exemplos/fullstack-java/.github/workflows/deploy.yml .github/workflows/deploy
 Va em **Settings → Secrets and variables → Actions → "New repository secret"**
 e adicione cada secret abaixo:
 
-| Secret | Descricao |
-|--------|-----------|
-| `NOMAD_ADDR` | Endereco do cluster Nomad |
-| `NOMAD_TOKEN` | Seu token de acesso ao Nomad |
-| `NOMAD_CACERT_B64` | Certificado TLS do cluster (base64) |
-| `STUDENT_NAMESPACE` | Seu namespace (ex: `aluno01`) |
-| `VAULT_ADDR` | Endereco do Vault |
-| `VAULT_TOKEN` | Token do Vault |
-| `APP_DB_PASSWORD` | Senha do banco de dados (voce escolhe) |
-| `APP_DB_ROOT_PASSWORD` | Senha root do MySQL (voce escolhe) |
-| `APP_JWT_SECRET` | Chave para tokens de autenticacao |
+| Secret | Descricao | Quem fornece |
+|--------|-----------|--------------|
+| `NOMAD_ADDR` | Endereco do cluster Nomad | Professor |
+| `NOMAD_TOKEN` | Seu token de acesso ao Nomad | Professor |
+| `NOMAD_CACERT_B64` | Certificado TLS do cluster (base64) | Professor |
+| `STUDENT_NAMESPACE` | Seu namespace (ex: `aluno01`) | Professor |
+| `VAULT_ADDR` | Endereco do Vault | Professor |
+| `VAULT_TOKEN` | Token do Vault | Professor |
+| `APP_DB_PASSWORD` | Senha do banco de dados | Voce escolhe |
+| `APP_DB_ROOT_PASSWORD` | Senha root do MySQL | Voce escolhe |
+| `APP_JWT_SECRET` | Chave para tokens de autenticacao | Voce escolhe |
 
-> Os 6 primeiros secrets sao fornecidos pelo professor.
-> Os 3 ultimos voce escolhe. Para gerar o `APP_JWT_SECRET`:
+> Para gerar o `APP_JWT_SECRET`, execute no terminal:
 > ```bash
 > openssl rand -hex 32
 > ```
