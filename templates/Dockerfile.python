@@ -1,36 +1,42 @@
 # ==============================================================================
 # Dockerfile — Python (Flask, FastAPI, Django, etc.)
 #
-# Boas praticas aplicadas:
+# Hardening aplicado:
 #   - Multi-stage build: dependencias compiladas no builder, runtime limpo
 #   - Usuario nao-root: aplicacao roda como "appuser" (sem privilegios)
 #   - Sem cache do pip: reduz tamanho da imagem
-#   - Imagem slim: menor que Alpine para Python (evita problemas com musl)
+#   - Bytecode desabilitado: evita escrita em disco desnecessaria
+#   - Output sem buffer: logs aparecem imediatamente no Nomad
+#   - Imagem slim: base Debian minima
+#   - HEALTHCHECK: Docker monitora saude do container
 # ==============================================================================
 
-# --- Stage 1: Instalar dependencias ---
+# --- Build ---
 FROM python:3.12-slim AS builder
 WORKDIR /app
 
 COPY requirements.txt .
 RUN pip install --no-cache-dir --prefix=/install -r requirements.txt
 
-# --- Stage 2: Runtime ---
+# --- Runtime ---
 FROM python:3.12-slim
 WORKDIR /app
 
-# Copiar dependencias instaladas
+# Sem bytecode (.pyc) e sem buffer de output
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1
+
 COPY --from=builder /install /usr/local
 
-# Criar usuario sem privilegios
-RUN useradd --create-home appuser
+RUN useradd --no-create-home --shell /usr/sbin/nologin appuser
 USER appuser
 
-# Copiar codigo da aplicacao
-COPY . .
+COPY --chown=appuser:appuser . .
 
-# Porta onde a aplicacao escuta (deve bater com job.nomad.hcl)
 EXPOSE 8080
+
+HEALTHCHECK --interval=15s --timeout=3s --start-period=10s --retries=3 \
+  CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:8080/health')" || exit 1
 
 # Flask
 # CMD ["python", "app.py"]
@@ -41,5 +47,5 @@ EXPOSE 8080
 # Django
 # CMD ["gunicorn", "myproject.wsgi:application", "--bind", "0.0.0.0:8080"]
 
-# Descomente a linha correspondente ao seu framework acima, ou ajuste conforme necessario
+# Descomente a linha do seu framework acima, ou ajuste conforme necessario
 CMD ["python", "app.py"]

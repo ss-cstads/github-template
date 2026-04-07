@@ -1,40 +1,42 @@
 # ==============================================================================
-# Multi-stage build: Maven (compilacao) + JRE (runtime)
+# Dockerfile — Backend Spring Boot
 #
-# Boas praticas aplicadas:
-#   - Multi-stage build: imagem final contem apenas o JRE e o .jar
-#   - Usuario nao-root: a aplicacao roda como "spring" (sem privilegios)
-#   - Limites de memoria JVM: evita consumo excessivo no cluster
-#   - Sem shell de debug: imagem baseada em Alpine (superficie minima)
-#   - Cache de dependencias: camada do pom.xml separada do codigo-fonte
+# Hardening aplicado:
+#   - Multi-stage build: imagem final contem apenas JRE + .jar
+#   - Usuario nao-root: roda como "spring" (sem privilegios)
+#   - .jar somente leitura (444): impede modificacao em runtime
+#   - JVM container-aware: respeita limites de memoria do cgroup
+#   - Imagem Alpine: superficie de ataque minima
+#   - HEALTHCHECK: Docker monitora saude do container
 # ==============================================================================
 
-# --- Stage 1: Build ---
+# --- Build ---
 FROM maven:3.9-eclipse-temurin-21-alpine AS build
 WORKDIR /app
 
-# Copiar apenas o pom.xml primeiro (cache de dependencias)
 COPY pom.xml .
 RUN mvn dependency:go-offline -B
 
-# Copiar codigo-fonte e compilar
 COPY src ./src
 RUN mvn package -DskipTests -B
 
-# --- Stage 2: Runtime ---
+# --- Runtime ---
 FROM eclipse-temurin:21-jre-alpine
 WORKDIR /app
 
-# Criar usuario nao-root para executar a aplicacao
 RUN addgroup -S spring && adduser -S spring -G spring
 
-# Copiar apenas o .jar compilado (nada de codigo-fonte na imagem final)
-COPY --from=build --chown=spring:spring /app/target/*.jar app.jar
+COPY --from=build --chown=spring:spring --chmod=444 /app/target/*.jar app.jar
 
-# Trocar para usuario sem privilegios
 USER spring:spring
 
 EXPOSE 8080
 
-# Limitar memoria da JVM para respeitar os recursos do cluster
-ENTRYPOINT ["java", "-Xmx384m", "-Xms256m", "-jar", "app.jar"]
+HEALTHCHECK --interval=15s --timeout=3s --start-period=30s --retries=3 \
+  CMD wget -qO- http://localhost:8080/actuator/health || exit 1
+
+ENTRYPOINT ["java", \
+  "-XX:+UseContainerSupport", \
+  "-XX:MaxRAMPercentage=75.0", \
+  "-Djava.security.egd=file:/dev/./urandom", \
+  "-jar", "app.jar"]

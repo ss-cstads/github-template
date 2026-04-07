@@ -1,32 +1,38 @@
 # ==============================================================================
 # Dockerfile — Node.js (Express, Fastify, etc.)
 #
-# Boas praticas aplicadas:
+# Hardening aplicado:
 #   - Multi-stage build: separa dependencias de dev do runtime
-#   - Usuario nao-root: aplicacao roda como "node" (sem privilegios)
-#   - .dockerignore: impede node_modules e .git de entrar no build
+#   - Usuario nao-root: aplicacao roda como "node" (UID 1000)
+#   - Signal handling: tini como init process (PID 1) para SIGTERM correto
 #   - Apenas dependencias de producao na imagem final
-#   - Imagem Alpine: superficie de ataque minima (~50MB)
+#   - Imagem Alpine: superficie de ataque minima
+#   - .dockerignore: impede node_modules e .git de entrar no build
+#   - HEALTHCHECK: Docker monitora saude do container
 # ==============================================================================
 
-# --- Stage 1: Instalar dependencias ---
 FROM node:22-alpine AS deps
 WORKDIR /app
 COPY package*.json ./
-RUN npm ci --omit=dev
+RUN npm ci --omit=dev --no-fund --no-audit
 
-# --- Stage 2: Runtime ---
+# --- Runtime ---
 FROM node:22-alpine
+
+# tini: init leve para tratar sinais corretamente (evita processos zumbi)
+RUN apk add --no-cache tini
+
 WORKDIR /app
 
-# Copiar apenas dependencias de producao
 COPY --from=deps /app/node_modules ./node_modules
-COPY . .
+COPY --chown=node:node . .
 
-# Rodar como usuario sem privilegios (usuario "node" ja existe na imagem)
 USER node
 
-# Porta onde a aplicacao escuta (deve bater com job.nomad.hcl)
 EXPOSE 8080
 
+HEALTHCHECK --interval=15s --timeout=3s --start-period=10s --retries=3 \
+  CMD wget -qO- http://localhost:8080/health || exit 1
+
+ENTRYPOINT ["tini", "--"]
 CMD ["node", "server.js"]
