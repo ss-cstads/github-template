@@ -9,4 +9,4 @@ Internet → Frontend (Angular) → Backend (Express.js) → MySQL
 **Login padrao:** usuario `admin`, senha `admin123`
 
 O passo a passo de deploy e identico ao exemplo principal.
-Consulte `exemplos/fullstack/README.md` para instrucoes detalhadas.
+Consulte `exemplos/fullstack-java/README.md` para instrucoes detalhadas.

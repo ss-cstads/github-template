@@ -323,10 +323,10 @@ CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8080"]
 │   ├── dockerignore.python        # .dockerignore para Python
 │   └── job.nomad.hcl              # Template de deploy no Nomad (generico)
 └── exemplos/
-    ├── fullstack/                 # Spring Boot + Angular + MySQL
-    ├── fullstack-express/         # Express.js + Angular + MySQL
-    ├── fullstack-ts/              # Express + TypeScript + Prisma + Angular + MySQL
-    └── fullstack-fastapi/         # FastAPI + Angular + MySQL
+    ├── fullstack-java/            # Spring Boot + Angular + MySQL
+    ├── fullstack-javascript/      # Express.js + Angular + MySQL
+    ├── fullstack-typescript/      # Express + TypeScript + Prisma + Angular + MySQL
+    └── fullstack-python/          # FastAPI + Angular + MySQL
 ```
 
 ---
@@ -336,17 +336,17 @@ CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8080"]
 Aplicacoes completas com 3 servicos (API + Frontend + MySQL). A mesma aplicacao
 **Task Manager** implementada em 4 stacks diferentes:
 
-| Exemplo | Backend | Frontend | ORM |
-|---------|---------|----------|-----|
-| `exemplos/fullstack/` | Spring Boot (Java) | Angular | JPA/Hibernate |
-| `exemplos/fullstack-express/` | Express.js (JavaScript) | Angular | Sequelize |
-| `exemplos/fullstack-ts/` | Express + TypeScript | Angular | Prisma |
-| `exemplos/fullstack-fastapi/` | FastAPI (Python) | Angular | SQLAlchemy |
+| Exemplo | Backend | Frontend | ORM | Banco |
+|---------|---------|----------|-----|-------|
+| `exemplos/fullstack-java/` | Spring Boot | Angular | JPA/Hibernate | MySQL |
+| `exemplos/fullstack-javascript/` | Express.js | Angular | Sequelize | MySQL |
+| `exemplos/fullstack-typescript/` | Express + TypeScript | Angular | Prisma | MySQL |
+| `exemplos/fullstack-python/` | FastAPI | Angular | SQLAlchemy | MySQL |
 
 Todos usam o mesmo frontend Angular e o mesmo MySQL.
-Escolha o que corresponde a sua stack e siga as instrucoes em `exemplos/fullstack/README.md`.
+Escolha o que corresponde a sua stack e siga as instrucoes em `exemplos/fullstack-java/README.md`.
 
-Para usar, siga as instrucoes em `exemplos/fullstack/README.md`.
+Para usar, siga as instrucoes em `exemplos/fullstack-java/README.md`.
 
 ---
 
