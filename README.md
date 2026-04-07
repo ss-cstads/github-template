@@ -1,4 +1,4 @@
-# Deploy no Cluster IFSUL
+# Deploy no Cluster ADS-TDS IFSUL Sapucaia
 
 Este repositorio e o ponto de partida para fazer deploy da sua aplicacao no
 servidor do Curso via GitHub Actions. Funciona com qualquer linguagem ou
