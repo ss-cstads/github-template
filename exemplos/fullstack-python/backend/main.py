@@ -7,7 +7,7 @@ from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from pydantic import BaseModel
 from sqlalchemy import create_engine, Column, Integer, String, Boolean, Text, DateTime, ForeignKey
 from sqlalchemy.orm import sessionmaker, declarative_base, relationship, Session
-from passlib.context import CryptContext
+import bcrypt
 from jose import jwt, JWTError
 
 # --- Configuracao ---
@@ -25,8 +25,13 @@ DATABASE_URL = f"mysql+pymysql://{DB_USER}:{DB_PASS}@{DB_HOST}:{DB_PORT}/{DB_NAM
 engine = create_engine(DATABASE_URL, pool_pre_ping=True)
 SessionLocal = sessionmaker(bind=engine)
 Base = declarative_base()
-pwd = CryptContext(schemes=["bcrypt"])
 security = HTTPBearer()
+
+def hash_password(password: str) -> str:
+    return bcrypt.hashpw(password.encode(), bcrypt.gensalt()).decode()
+
+def verify_password(password: str, hashed: str) -> bool:
+    return bcrypt.checkpw(password.encode(), hashed.encode())
 
 # --- Modelos ---
 class UserModel(Base):
@@ -117,7 +122,7 @@ async def lifespan(app: FastAPI):
     Base.metadata.create_all(bind=engine)
     db = SessionLocal()
     if not db.query(UserModel).filter(UserModel.username == "admin").first():
-        admin = UserModel(username="admin", password=pwd.hash("admin123"), name="Administrador", role="ADMIN")
+        admin = UserModel(username="admin", password=hash_password("admin123"), name="Administrador", role="ADMIN")
         db.add(admin)
         db.commit()
         print("Usuario admin criado (admin / admin123)")
@@ -131,7 +136,7 @@ app = FastAPI(title="Task API", lifespan=lifespan)
 def register(req: RegisterReq, db: Session = Depends(get_db)):
     if db.query(UserModel).filter(UserModel.username == req.username).first():
         raise HTTPException(status_code=409, detail="Usuario ja existe")
-    user = UserModel(username=req.username, password=pwd.hash(req.password), name=req.name)
+    user = UserModel(username=req.username, password=hash_password(req.password), name=req.name)
     db.add(user)
     db.commit()
     db.refresh(user)
@@ -140,7 +145,7 @@ def register(req: RegisterReq, db: Session = Depends(get_db)):
 @app.post("/api/auth/login", response_model=AuthRes)
 def login(req: LoginReq, db: Session = Depends(get_db)):
     user = db.query(UserModel).filter(UserModel.username == req.username).first()
-    if not user or not pwd.verify(req.password, user.password):
+    if not user or not verify_password(req.password, user.password):
         raise HTTPException(status_code=401, detail="Credenciais invalidas")
     return AuthRes(token=create_token(user.id, user.username), username=user.username, name=user.name, role=user.role)
 
