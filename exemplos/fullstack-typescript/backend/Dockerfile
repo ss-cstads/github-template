@@ -14,7 +14,7 @@ WORKDIR /app
 
 COPY package*.json ./
 COPY prisma ./prisma/
-RUN npm ci --no-fund --no-audit
+RUN npm install --no-fund --no-audit
 RUN npx prisma generate
 
 COPY tsconfig.json ./
@@ -27,7 +27,7 @@ RUN apk add --no-cache tini
 WORKDIR /app
 
 COPY package*.json ./
-RUN npm ci --omit=dev --no-fund --no-audit
+RUN npm install --omit=dev --no-fund --no-audit
 
 COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
