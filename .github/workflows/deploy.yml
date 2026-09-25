@@ -122,4 +122,5 @@ jobs:
           nomad job status -namespace="${STUDENT_NAMESPACE}" "${JOB}" || true
 
       - name: Endereco da aplicacao
-        run: echo "Acesse: https://${STUDENT_NAMESPACE}.projetos.sapucaia.ifsul.edu.br"
+        run: |
+          echo "Acesse: https://${STUDENT_NAMESPACE}.projetos.sapucaia.ifsul.edu.br"
