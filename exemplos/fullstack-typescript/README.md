@@ -22,9 +22,7 @@ Clone seu repositorio e copie os arquivos deste exemplo para a raiz:
 git clone https://github.com/<seu-usuario>/<seu-repositorio>.git
 cd <seu-repositorio>
 
-cp exemplos/fullstack-typescript/backend.nomad.hcl  .
-cp exemplos/fullstack-typescript/frontend.nomad.hcl .
-cp exemplos/fullstack-typescript/mysql.nomad.hcl    .
+cp -r exemplos/fullstack-typescript/deploy/   .
 cp -r exemplos/fullstack-typescript/backend/  .
 cp -r exemplos/fullstack-typescript/frontend/ .
 cp exemplos/fullstack-typescript/.github/workflows/deploy.yml .github/workflows/deploy.yml
@@ -39,7 +37,6 @@ e adicione cada secret abaixo:
 |--------|-----------|--------------|
 | `NOMAD_ADDR` | Endereco do cluster Nomad | Professor |
 | `NOMAD_TOKEN` | Seu token de acesso ao Nomad | Professor |
-| `NOMAD_CACERT_B64` | Certificado TLS do cluster (base64) | Professor |
 | `STUDENT_NAMESPACE` | Seu namespace (ex: `aluno01`) | Professor |
 | `VAULT_ADDR` | Endereco do Vault | Professor |
 | `VAULT_TOKEN` | Token do Vault | Professor |
@@ -96,9 +93,10 @@ https://<seu-namespace>.projetos.sapucaia.ifsul.edu.br
 
 ```
 ├── .github/workflows/deploy.yml   # Pipeline de deploy automatico
-├── backend.nomad.hcl              # Deploy do backend no cluster
-├── frontend.nomad.hcl             # Deploy do frontend no cluster
-├── mysql.nomad.hcl                # Deploy do banco de dados no cluster
+├── deploy/                        # Configuracao do deploy (Nomad Packs do cluster)
+│   ├── mysql.hcl                  # pack mysql: banco e usuario
+│   ├── api.hcl                    # pack api: porta, health check, recursos, segredos
+│   └── web.hcl                    # pack web_app: frontend publico
 ├── backend/
 │   ├── Dockerfile                 # Imagem Docker do backend
 │   ├── package.json               # Dependencias Node.js
@@ -109,6 +107,7 @@ https://<seu-namespace>.projetos.sapucaia.ifsul.edu.br
 │       └── server.ts              # Codigo-fonte Express + TypeScript
 └── frontend/
     ├── Dockerfile                 # Imagem Docker do frontend
+    ├── nginx.conf                 # Nginx: SPA, /health e proxy /api/ para o backend
     ├── angular.json               # Configuracao Angular
     ├── package.json               # Dependencias Node.js
     └── src/                       # Codigo-fonte Angular

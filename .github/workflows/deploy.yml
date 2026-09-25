@@ -22,7 +22,7 @@ jobs:
     steps:
       - name: Instalar Vault CLI
         run: |
-          VAULT_VERSION="1.21.4"
+          VAULT_VERSION="2.1.1"
           curl -fsSL "https://releases.hashicorp.com/vault/${VAULT_VERSION}/vault_${VAULT_VERSION}_linux_amd64.zip" -o vault.zip
           unzip -o vault.zip && sudo mv vault /usr/local/bin/
 
@@ -30,7 +30,6 @@ jobs:
         env:
           VAULT_ADDR:        ${{ secrets.VAULT_ADDR }}
           VAULT_TOKEN:       ${{ secrets.VAULT_TOKEN }}
-          VAULT_SKIP_VERIFY: "true"
         run: |
           # PERSONALIZE: ajuste os segredos conforme sua aplicacao.
           # Cada segredo aqui deve ter um GitHub Secret correspondente.
@@ -82,36 +81,45 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Instalar Nomad CLI
+      - name: Instalar Nomad CLI e Nomad Pack
         run: |
-          NOMAD_VERSION="1.11.3"
+          NOMAD_VERSION="2.0.7"
+          NOMAD_PACK_VERSION="0.4.2"
           curl -fsSL "https://releases.hashicorp.com/nomad/${NOMAD_VERSION}/nomad_${NOMAD_VERSION}_linux_amd64.zip" -o nomad.zip
-          unzip -o nomad.zip && sudo mv nomad /usr/local/bin/
+          curl -fsSL "https://releases.hashicorp.com/nomad-pack/${NOMAD_PACK_VERSION}/nomad-pack_${NOMAD_PACK_VERSION}_linux_amd64.zip" -o nomad-pack.zip
+          unzip -o nomad.zip && unzip -o nomad-pack.zip && sudo mv nomad nomad-pack /usr/local/bin/
 
-      - name: Configurar certificado TLS
+      # ----------------------------------------------------------------
+      # Com nomad-pack.hcl na raiz: deploy pelo pack (recomendado).
+      # Sem ele: job.nomad.hcl escrito a mao (avancado).
+      # ----------------------------------------------------------------
+      - name: Deploy pelo Nomad Pack
+        if: hashFiles('nomad-pack.hcl') != ''
+        env:
+          PACKS_REGISTRY: github.com/ss-cstads/nomad-packs
+          PACKS_REF: v1.0.0
+          PACK: ${{ vars.NOMAD_PACK || 'web_app' }}
         run: |
-          echo "${{ secrets.NOMAD_CACERT_B64 }}" | base64 -d > /tmp/ca.pem
-          echo "NOMAD_CACERT=/tmp/ca.pem"  >> "$GITHUB_ENV"
-          echo "NOMAD_SKIP_VERIFY=true"    >> "$GITHUB_ENV"
+          nomad-pack registry add ifsul "${PACKS_REGISTRY}" --ref="${PACKS_REF}"
+          nomad-pack run "${PACK}" --registry=ifsul --ref="${PACKS_REF}" \
+            -f nomad-pack.hcl \
+            --var namespace="${STUDENT_NAMESPACE}" \
+            --var image="ghcr.io/${{ github.repository }}:${{ github.sha }}"
 
-      - name: Validar job spec
+      - name: Deploy pelo job.nomad.hcl
+        if: hashFiles('nomad-pack.hcl') == ''
         run: |
           nomad job validate \
             -var="namespace=${STUDENT_NAMESPACE}" \
             -var="image=ghcr.io/${{ github.repository }}:${{ github.sha }}" \
             job.nomad.hcl
-
-      - name: Deploy para o cluster
-        run: |
           nomad job run -detach \
             -var="namespace=${STUDENT_NAMESPACE}" \
             -var="image=ghcr.io/${{ github.repository }}:${{ github.sha }}" \
             job.nomad.hcl
-
-      - name: Verificar status do deploy
-        run: |
           sleep 15
           JOB=$(grep '^job "' job.nomad.hcl | head -1 | awk -F'"' '{print $2}')
           nomad job status -namespace="${STUDENT_NAMESPACE}" "${JOB}" || true
-          echo ""
-          echo "Acesse: https://${STUDENT_NAMESPACE}.projetos.sapucaia.ifsul.edu.br"
+
+      - name: Endereco da aplicacao
+        run: echo "Acesse: https://${STUDENT_NAMESPACE}.projetos.sapucaia.ifsul.edu.br"

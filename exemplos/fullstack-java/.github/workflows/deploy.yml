@@ -22,14 +22,13 @@ jobs:
     steps:
       - name: Instalar Vault CLI
         run: |
-          curl -fsSL "https://releases.hashicorp.com/vault/1.21.4/vault_1.21.4_linux_amd64.zip" -o vault.zip
+          curl -fsSL "https://releases.hashicorp.com/vault/2.1.1/vault_2.1.1_linux_amd64.zip" -o vault.zip
           unzip -o vault.zip && sudo mv vault /usr/local/bin/
 
       - name: Escrever segredos no Vault
         env:
           VAULT_ADDR:        ${{ secrets.VAULT_ADDR }}
           VAULT_TOKEN:       ${{ secrets.VAULT_TOKEN }}
-          VAULT_SKIP_VERIFY: "true"
         run: |
           vault kv put "secret/students/${{ secrets.STUDENT_NAMESPACE }}/app" \
             db_password="${{ secrets.APP_DB_PASSWORD }}"           \
@@ -98,55 +97,50 @@ jobs:
     runs-on: ubuntu-latest
     needs: [vault-secrets, build-backend, build-frontend]
     if: always() && !contains(needs.*.result, 'failure') && !contains(needs.*.result, 'cancelled')
+    env:
+      PACKS_REGISTRY: github.com/ss-cstads/nomad-packs
+      PACKS_REF: v1.0.0
+      IMAGE: ghcr.io/${{ github.repository }}
     steps:
       - uses: actions/checkout@v4
 
-      - name: Instalar Nomad CLI
+      - name: Instalar Nomad CLI e Nomad Pack
         run: |
-          curl -fsSL "https://releases.hashicorp.com/nomad/1.11.3/nomad_1.11.3_linux_amd64.zip" -o nomad.zip
-          unzip -o nomad.zip && sudo mv nomad /usr/local/bin/
+          NOMAD_VERSION="2.0.7"
+          NOMAD_PACK_VERSION="0.4.2"
+          curl -fsSL "https://releases.hashicorp.com/nomad/${NOMAD_VERSION}/nomad_${NOMAD_VERSION}_linux_amd64.zip" -o nomad.zip
+          curl -fsSL "https://releases.hashicorp.com/nomad-pack/${NOMAD_PACK_VERSION}/nomad-pack_${NOMAD_PACK_VERSION}_linux_amd64.zip" -o nomad-pack.zip
+          unzip -o nomad.zip && unzip -o nomad-pack.zip && sudo mv nomad nomad-pack /usr/local/bin/
 
-      - name: Configurar TLS do cluster
-        run: |
-          echo "${{ secrets.NOMAD_CACERT_B64 }}" | base64 -d > /tmp/ca.pem
-          echo "NOMAD_CACERT=/tmp/ca.pem"  >> "$GITHUB_ENV"
-          echo "NOMAD_SKIP_VERIFY=true"    >> "$GITHUB_ENV"
-          echo "VAULT_SKIP_VERIFY=true"    >> "$GITHUB_ENV"
+      - name: Registry de packs do cluster
+        run: nomad-pack registry add ifsul "${PACKS_REGISTRY}" --ref="${PACKS_REF}"
 
+      # Configuracao de cada parte em deploy/*.hcl
       - name: Deploy MySQL
         run: |
-          nomad job run -detach \
-            -var="namespace=${STUDENT_NAMESPACE}" \
-            mysql.nomad.hcl
-
-      - name: Aguardar MySQL healthy
-        run: |
-          for i in $(seq 1 30); do
-            COUNT=$(nomad job status -namespace="${STUDENT_NAMESPACE}" mysql 2>/dev/null | grep -c "running" || echo 0)
-            [ "$COUNT" -gt 0 ] && echo "MySQL running" && break
-            echo "Aguardando MySQL... ($i/30)" && sleep 10
-          done
+          nomad-pack run mysql --registry=ifsul --ref="${PACKS_REF}" \
+            -f deploy/mysql.hcl \
+            --var namespace="${STUDENT_NAMESPACE}"
 
       - name: Deploy Backend
         run: |
-          nomad job run -detach \
-            -var="namespace=${STUDENT_NAMESPACE}" \
-            -var="image=ghcr.io/${{ github.repository }}/backend:${{ github.sha }}" \
-            backend.nomad.hcl
+          nomad-pack run api --registry=ifsul --ref="${PACKS_REF}" \
+            -f deploy/api.hcl \
+            --var namespace="${STUDENT_NAMESPACE}" \
+            --var image="${IMAGE}/backend:${{ github.sha }}"
 
       - name: Deploy Frontend
         run: |
-          nomad job run -detach \
-            -var="namespace=${STUDENT_NAMESPACE}" \
-            -var="image=ghcr.io/${{ github.repository }}/frontend:${{ github.sha }}" \
-            frontend.nomad.hcl
+          nomad-pack run web_app --registry=ifsul --ref="${PACKS_REF}" \
+            -f deploy/web.hcl \
+            --var namespace="${STUDENT_NAMESPACE}" \
+            --var image="${IMAGE}/frontend:${{ github.sha }}"
 
       - name: Status final
         run: |
-          sleep 20
-          for job in mysql backend frontend; do
+          for job in mysql api web; do
             echo "── $job ──"
             nomad job status -namespace="${STUDENT_NAMESPACE}" "$job" || true
           done
           echo ""
-          echo "Acesse: http://${STUDENT_NAMESPACE}.projetos.sapucaia.ifsul.edu.br"
+          echo "Acesse: https://${STUDENT_NAMESPACE}.projetos.sapucaia.ifsul.edu.br"
