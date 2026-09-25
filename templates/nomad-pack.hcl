@@ -7,7 +7,8 @@
 #
 # O CI preenche sozinho: namespace e image. Ajuste abaixo so o que precisar;
 # linhas comentadas usam o valor padrao.
-# Referencia completa: https://github.com/ss-cstads/nomad-packs
+# Todas as opcoes, com descricao: packs/<pack>/variables.hcl em
+# https://github.com/ss-cstads/nomad-packs
 # ==============================================================================
 
 # Porta em que sua aplicacao escuta dentro do container (EXPOSE do Dockerfile)
