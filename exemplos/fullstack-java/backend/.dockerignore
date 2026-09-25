@@ -1,8 +1,0 @@
-# Arquivos que NAO devem entrar no build context do Docker
-target
-.git
-.gitignore
-*.md
-.idea
-.vscode
-.env
