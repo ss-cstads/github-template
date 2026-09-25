@@ -99,7 +99,7 @@ jobs:
     if: always() && !contains(needs.*.result, 'failure') && !contains(needs.*.result, 'cancelled')
     env:
       PACKS_REGISTRY: github.com/ss-cstads/nomad-packs
-      PACKS_REF: v1.0.0
+      PACKS_REF: v1.0.1
       IMAGE: ghcr.io/${{ github.repository }}
     steps:
       - uses: actions/checkout@v7

@@ -97,7 +97,7 @@ jobs:
         if: hashFiles('nomad-pack.hcl') != ''
         env:
           PACKS_REGISTRY: github.com/ss-cstads/nomad-packs
-          PACKS_REF: v1.0.0
+          PACKS_REF: v1.0.1
           PACK: ${{ vars.NOMAD_PACK || 'web_app' }}
         run: |
           nomad-pack registry add ifsul "${PACKS_REGISTRY}" --ref="${PACKS_REF}"
